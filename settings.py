@@ -8,3 +8,8 @@ MYSQL_CONFIG = {
     'database': 'romarin',
     'raise_on_warnings': True,
 }
+
+try:
+    from local_settings import *
+except ImportError:
+    pass

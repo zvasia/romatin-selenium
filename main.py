@@ -52,9 +52,9 @@ def get_database_nums(start_date, end_date):
         .format(start_date=start_date, end_date=end_date)
     cursor.execute(query)
     tms_in_db = cursor.fetchall()
-    trademarks_in_db = []
-    for x in tms_in_db:
-        trademarks_in_db.append(x[0])
+    trademarks_in_db = [
+        x[0] for x in tms_in_db
+    ]
     cursor.close()
     link.close()
     return trademarks_in_db
@@ -73,7 +73,7 @@ start_page = int(namespace.p)
 # parse data
 # driver options
 options = webdriver.ChromeOptions()
-# options.add_argument("--headless")
+options.add_argument("--headless")
 options.add_argument("--disable-gpu")
 options.add_argument('blink-settings=imagesEnabled=false')
 
