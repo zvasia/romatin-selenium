@@ -1,8 +1,7 @@
 import sys
 import argparse
 import mysql.connector
-from datetime import datetime
-
+import settings
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
@@ -12,26 +11,20 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import TimeoutException
 
 
-def create_argument_parser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-df', default='*') # date_from
-    parser.add_argument('-dt', default='*') # date_to
-
-    return parser
-
-
-arguments_parser = create_argument_parser()
+arguments_parser = argparse.ArgumentParser()
+arguments_parser.add_argument('-df', default='*') # date_from
+arguments_parser.add_argument('-dt', default='*') # date_to
 namespace = arguments_parser.parse_args(sys.argv[1:])
 
 date_from = namespace.df
 date_to = namespace.dt
 
 # parse data
+# driver options
 options = webdriver.ChromeOptions()
 options.add_argument("--headless")
 options.add_argument("--disable-gpu")
 options.add_argument('blink-settings=imagesEnabled=false')
-start_time = datetime.now()
 
 
 def wait_for_load(selector):
@@ -54,17 +47,12 @@ def get_irns_on_page(list):
 
 
 driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
-
-SEARCH_URL = 'https://www3.wipo.int/madrid/monitor/en'
-
-PAGE_SIZE = 100
-
-driver.get(SEARCH_URL)
+driver.get(settings.SEARCH_URL)
 driver.find_element_by_css_selector("a#advancedModeLink").click()
 driver.find_element_by_css_selector("input#RD_input").send_keys(date_from + " TO " + date_to + Keys.ENTER)
 wait_for_load('select#rowCount1')
 driver.find_element_by_css_selector("select#rowCount1").click()
-driver.find_element_by_css_selector("option[value='100']").click()
+driver.find_element_by_css_selector("option[value='" + str(settings.PAGE_SIZE) + "']").click()
 wait_for_load('div.pageCount')
 
 page_counter = driver.find_element_by_css_selector("div.pageCount").text.split(' ')
@@ -83,16 +71,6 @@ f.close()
 
 
 # compare with current database
-config = {
-    'user': 'root',
-    'password': 'root',
-    'port': '8889',
-    'host': '127.0.0.1',
-    'database': 'romarin',
-    'raise_on_warnings': True,
-}
-
-
 def get_site_nums():
     f = open("irns.txt", "r")
     parsed_irns = f.read().split('\n')
@@ -102,7 +80,7 @@ def get_site_nums():
 
 
 def get_database_nums(start_date, end_date):
-    link = mysql.connector.connect(**config)
+    link = mysql.connector.connect(**settings.MYSQL_CONFIG)
     cursor = link.cursor()
     query = "SELECT INTREGN FROM TOSN WHERE (INTREGD BETWEEN '{start_date}' AND '{end_date}')"\
         .format(start_date=start_date, end_date=end_date)
